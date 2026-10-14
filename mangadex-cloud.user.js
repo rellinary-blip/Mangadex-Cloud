@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         MangaDex - Cloud
 // @namespace    https://mangadex.org/
-// @version      1.0
+// @version      1.1
 // @description  Cloud-synchronized personal notes, custom rating formula, and ranking database for MangaDex.
 // @author       rellinary-blip
 // @license      MIT
 // @icon         https://mangadex.org/favicon.ico
 // @match        *://mangadex.org/*
 // @grant        none
+// @downloadURL https://update.greasyfork.org/scripts/600148/MangaDex%20-%20Cloud.user.js
+// @updateURL https://update.greasyfork.org/scripts/600148/MangaDex%20-%20Cloud.meta.js
 // ==/UserScript==
 
 (function() {
@@ -733,45 +735,52 @@
             return;
         }
 
-        const unprocessedCards = resultsContainer.querySelectorAll('a.manga-card-dense:not([data-nav-search-processed="true"])');
-        if (unprocessedCards.length === 0) return;
+        const cards = resultsContainer.querySelectorAll('a.manga-card-dense');
+        if (cards.length === 0) return;
 
         const searchBarCfg = getActiveSettings().searchBar;
         let updatedCount = 0;
 
         if (typeof observer !== 'undefined') observer.disconnect();
 
-        unprocessedCards.forEach((card) => {
-            card.dataset.navSearchProcessed = "true";
-
+        cards.forEach((card) => {
             const href = card.getAttribute('href') || '';
             const match = href.match(/\/title\/([a-f0-9\-]+)/);
             if (!match) return;
             const mangaId = match[1];
 
-            const statsGrid = card.querySelector('[style*="grid-area: stats"]');
-            if (!statsGrid) return;
+            // Skip only if this exact mangaId was already processed on this card
+            if (card.dataset.navSearchMangaId === mangaId) return;
 
+            const statsGrid = card.querySelector('[style*="grid-area: stats"], [style*="grid-row-start: stats"]') || card;
             const starIcon = statsGrid.querySelector('svg.feather-star');
             if (!starIcon) return;
 
             const stat = starIcon.parentElement;
             if (!stat) return;
 
-            let originalValue = 0;
-            stat.childNodes.forEach(node => {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const parsed = parseFloat(node.textContent.trim());
-                    if (!isNaN(parsed) && parsed > 0) originalValue = parsed;
-                }
-            });
+            // Remove old custom badge if Vue reused the card for a new search result
+            const oldCustom = stat.querySelector('.custom-mangadex-rating');
+            if (oldCustom) oldCustom.remove();
 
-            if (originalValue <= 0 && stat.getAttribute('title')) {
+            let originalValue = 0;
+            if (stat.getAttribute('title')) {
                 const parsedTitle = parseFloat(stat.getAttribute('title'));
                 if (!isNaN(parsedTitle) && parsedTitle > 0) originalValue = parsedTitle;
             }
 
+            if (originalValue <= 0) {
+                stat.childNodes.forEach(node => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const parsed = parseFloat(node.textContent.trim());
+                        if (!isNaN(parsed) && parsed > 0) originalValue = parsed;
+                    }
+                });
+            }
+
             if (originalValue <= 0) return;
+
+            card.dataset.navSearchMangaId = mangaId;
 
             let newValue = -0.03256 * Math.pow((originalValue - 5.5), 2) + 2.5177 * (originalValue - 5.5);
             let finalScore = Number(newValue.toFixed(2));
@@ -1326,9 +1335,22 @@
             tokenInput.placeholder = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
             if (authConfig && authConfig.token) tokenInput.value = authConfig.token;
 
-            let copyGistBtn = null;
+            let gistActionsWrap = null;
             if (authConfig && authConfig.gistId) {
-                copyGistBtn = buildEl('button', 'text-xs font-bold text-primary rounded cursor-pointer hover:opacity-80 transition-opacity', 'Copy ID');
+                gistActionsWrap = buildEl('div', 'flex items-center');
+                gistActionsWrap.style.gap = '6px';
+
+                const openGistLink = buildEl('a', 'text-xs font-bold text-primary rounded cursor-pointer hover:opacity-80 transition-opacity', 'Open Gist ↗');
+                openGistLink.href = `https://gist.github.com/${authConfig.gistId}`;
+                openGistLink.target = '_blank';
+                openGistLink.rel = 'noopener noreferrer';
+                openGistLink.style.padding = '2px 8px';
+                openGistLink.style.fontSize = '0.68rem';
+                openGistLink.style.backgroundColor = 'rgb(var(--md-primary) / 15%)';
+                openGistLink.style.textDecoration = 'none';
+                openGistLink.title = 'Open Gist database in a new tab';
+
+                const copyGistBtn = buildEl('button', 'text-xs font-bold text-primary rounded cursor-pointer hover:opacity-80 transition-opacity', 'Copy ID');
                 copyGistBtn.type = 'button';
                 copyGistBtn.style.padding = '2px 8px';
                 copyGistBtn.style.fontSize = '0.68rem';
@@ -1339,6 +1361,9 @@
                         setTimeout(() => { copyGistBtn.textContent = 'Copy ID'; }, 1500);
                     });
                 });
+
+                gistActionsWrap.appendChild(openGistLink);
+                gistActionsWrap.appendChild(copyGistBtn);
             }
 
             const gistHeader = createLabelWithHelp('Gist ID (Optional for first setup):', (helpBox) => {
@@ -1353,7 +1378,7 @@
 
                 helpBox.appendChild(firstDev);
                 helpBox.appendChild(secondDev);
-            }, copyGistBtn);
+            }, gistActionsWrap);
 
             const gistInput = buildEl('input', 'w-full bg-background text-color rounded border border-accent-20 outline-none focus:border-primary text-xs');
             gistInput.style.padding = '9px 12px';
