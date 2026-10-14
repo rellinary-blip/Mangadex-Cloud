@@ -2,8 +2,8 @@
 
 A userscript for MangaDex that recalibrates the rating scale, tracks your personal ranking (`#Rank`) across all titles you browse, and lets you write private notes on manga pages. Everything can be synced across devices using a private GitHub Gist or stored locally in the browser.
 
-<img width="513" height="400" alt="Mangadex - Cloud 1" src="https://github.com/user-attachments/assets/2f1a4de3-61c7-4a96-8758-1367b7b1afd9" />
-<img width="689" height="400" alt="Mangadex - Cloud 2" src="https://github.com/user-attachments/assets/494252c3-816f-4213-a9af-27273a928628" />
+<img width="700" height="407" alt="Mangadex-Cloud 1" src="https://github.com/user-attachments/assets/e0decc5f-6ad9-45dd-8b18-bb4671b0f8ff" />
+<img width="700" height="546" alt="Mangadex-Cloud 2" src="https://github.com/user-attachments/assets/0b22aa4f-a9d0-4741-9eb9-2ac4883fd8e4" />
 
 
 ## Why recalculate ratings?
