@@ -17,7 +17,7 @@ This script takes the original Bayesian score ($x$) and applies a quadratic form
 * **8.00** becomes **6.09**
 * **8.50** becomes **7.26**
 * **9.00** becomes **8.41**
-* **9.39** becomes **9.31**
+* **9.50** becomes **9.55**
 
 Scores are color-coded (red to green/cyan) and cached as you browse. Based on the titles you've seen so far, the script calculates and displays each manga's `#Rank` in your database. You can still keep the original MangaDex rating visible in parentheses if you want both.
 
